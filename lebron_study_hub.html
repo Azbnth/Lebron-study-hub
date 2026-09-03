@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeBron - The Ultimate AI Study Hub</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        lakers: {
+                            purple: '#552583',
+                            purpleDark: '#361658',
+                            gold: '#FDB927',
+                            goldHover: '#e5a51f',
+                            darkBg: '#0b0813',
+                            cardBg: '#151024',
+                            border: '#2a2240',
+                            accent: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        display: ['Teko', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0b0813;
+            color: #f3f4f6;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(85, 37, 131, 0.25) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(253, 185, 39, 0.15) 0%, transparent 40%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        /* 3D Flip Card Animation */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #151024;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #361658;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FDB927;
+        }
+
+        /* Crown Pulse Glow */
+        @keyframes crownGlow {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(253, 185, 39, 0.6)); }
+            50% { filter: drop-shadow(0 0 18px rgba(253, 185, 39, 0.9)); }
+        }
+        .crown-glow {
+            animation: crownGlow 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="selection:bg-lakers-gold selection:text-black">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Audio Synthesizer for Court & Game FX without external sound files
+        const playSound = (type) => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ctx.currentTime;
+
+                if (type === 'swish') {
+                    // Swish sound effect (White noise sweep)
+                    const bufferSize = ctx.sampleRate * 0.25;
+                    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    const filter = ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(1200, now);
+                    filter.frequency.exponentialRampToValueAtTime(300, now + 0.2);
+                    filter.Q.value = 3;
+
+                    const gain = ctx.createGain();
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    noise.start(now);
+
+                } else if (type === 'buzzer') {
+                    // Arena Buzzer sound
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(140, now);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+
+                } else if (type === 'correct') {
+                    // Score chime
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.3);
+                    });
+
+                } else if (type === 'bounce') {
+                    // Ball bounce
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                }
+            } catch (e) {
+                console.log("Audio API muted or non-interactive context");
+            }
+        };
+
+        const DEFAULT_DECKS = [
+            {
+                id: 'deck-1',
+                title: 'Physics of Motion & Basketball Mechanics',
+                category: 'Physics',
+                description: 'Understand projectile trajectory, kinetic energy, friction, and Newton’s laws through the lens of a perfect jumper.',
+                cards: [
+                    { id: 'c1', question: 'What angle produces maximum theoretical distance in projectile motion on flat ground?', answer: '45 degrees', explanation: 'At 45 degrees, the horizontal and vertical velocity components strike an optimal balance for maximum range in a vacuum.', lebronTip: 'When shooting from deep, arc matters! 45 degrees gives you that high-arching wet swish.' },
+                    { id: 'c2', question: 'State Newton’s 3rd Law of Motion.', answer: 'For every action, there is an equal and opposite reaction.', explanation: 'Forces always occur in pairs. When object A exerts a force on B, B exerts an equal and opposite force on A.', lebronTip: 'When you explode off the hardwood for a dunk, you push down hard on the floor, and the floor pushes you up into the sky!' },
+                    { id: 'c3', question: 'What is the formula for Kinetic Energy?', answer: 'KE = 1/2 * m * v^2', explanation: 'Kinetic Energy depends on mass (m) and the square of velocity (v). Doubling speed quadruples energy.', lebronTip: 'A 250lb freight train moving at full speed on a fastbreak carries huge KE — defender beware!' },
+                    { id: 'c4', question: 'How does Magnus Effect affect a basketball with backspin?', answer: 'It generates lift, softening the ball when hitting the rim.', explanation: 'Backspin creates higher air pressure underneath the ball than above it, keeping the shot line stable.', lebronTip: 'Put nice backspin on your flick — gives you that soft rim touch for the shooter’s bounce!' }
+                ],
+                quiz: [
+                    { id: 'q1', question: 'Which angle maximizes projectile range in ideal physics conditions?', options: ['30°', '45°', '60°', '90°'], correctIndex: 1, explanation: '45 degrees provides the optimal balanced split between horizontal velocity and flight duration.' },
+                    { id: 'q2', question: 'If velocity doubles, what happens to kinetic energy?', options: ['Doubles', 'Triples', 'Quadruples', 'Remains same'], correctIndex: 2, explanation: 'Because KE = 1/2 m v^2, doubling velocity squares the multiplier (2^2 = 4).' },
+                    { id: 'q3', question: 'Force equals mass times what?', options: ['Acceleration', 'Velocity', 'Distance', 'Gravity'], correctIndex: 0, explanation: 'Newton’s Second Law states F = m * a.' }
+                ]
+            },
+            {
+                id: 'deck-2',
+                title: 'Cellular Biology & ATP Energy Production',
+                category: 'Biology',
+                description: 'Master mitochondria, cellular respiration, glycolysis, and how cells fuel peak athletic performance.',
+                cards: [
+                    { id: 'c5', question: 'What is known as the "Powerhouse of the Cell"?', answer: 'Mitochondria', explanation: 'Mitochondria generate most of the chemical energy needed to power the cell’s biochemical reactions via ATP.', lebronTip: 'Mitochondria are like the conditioning drills — without strong ATP generation, you gass out in the 4th quarter!' },
+                    { id: 'c6', question: 'Where does Glycolysis take place inside the cell?', answer: 'Cytoplasm (Cytosol)', explanation: 'Glycolysis breaks down glucose into pyruvate in the cytoplasm without needing initial oxygen.', lebronTip: 'Glycolysis is your fastbreak offense: quick energy without waiting for oxygen to catch up.' },
+                    { id: 'c7', question: 'What is the net gain of ATP molecules produced in Glycolysis?', answer: '2 ATP molecules', explanation: 'Glycolysis consumes 2 ATP and produces 4 ATP, resulting in a net yield of 2 ATP per glucose.', lebronTip: 'Small gains compound into championship victories — 2 ATP at a time!' }
+                ],
+                quiz: [
+                    { id: 'q4', question: 'Where does glycolysis occur?', options: ['Nucleus', 'Mitochondrial Matrix', 'Cytoplasm', 'Ribosome'], correctIndex: 2, explanation: 'Glycolysis takes place in the fluid cytosol/cytoplasm of the cell.' },
+                    { id: 'q5', question: 'What currency of energy do cells use?', options: ['RNA', 'ATP', 'DNA', 'Glucose-9'], correctIndex: 1, explanation: 'Adenosine Triphosphate (ATP) is the primary energy unit of cellular functions.' }
+                ]
+            }
+        ];
+
+        function LeBronApp() {
+            // App state
+            const [decks, setDecks] = React.useState(() => {
+                const saved = localStorage.getItem('lebron_decks');
+                return saved ? JSON.parse(saved) : DEFAULT_DECKS;
+            });
+            const [activeTab, setActiveTab] = React.useState('locker'); // 'locker', 'import', 'flashcards', 'quiz', 'coach', 'timer'
+            const [selectedDeckId, setSelectedDeckId] = React.useState(decks[0]?.id || 'deck-1');
+            const [streak, setStreak] = React.useState(7);
+            const [rings, setRings] = React.useState(['Rookie Championship', 'Quiz Ace', 'Night Shift']);
+            const [soundEnabled, setSoundEnabled] = React.useState(true);
+
+            // Persist decks
+            React.useEffect(() => {
+                localStorage.setItem('lebron_decks', JSON.stringify(decks));
+            }, [decks]);
+
+            // Selected Deck Helper
+            const currentDeck = decks.find(d => d.id === selectedDeckId) || decks[0];
+
+            const triggerSound = (type) => {
+                if (soundEnabled) playSound(type);
+            };
+
+            return (
+                <div class="min-h-screen flex flex-col md:flex-row">
+                    {/* Navigation Sidebar */}
+                    <Sidebar 
+                        activeTab={activeTab} 
+                        setActiveTab={setActiveTab} 
+                        streak={streak} 
+                        soundEnabled={soundEnabled}
+                        setSoundEnabled={setSoundEnabled}
+                    />
+
+                    {/* Main Content Area */}
+                    <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
+                        {/* Header Banner */}
+                        <HeaderBar 
+                            currentDeck={currentDeck} 
+                            decks={decks} 
+                            setSelectedDeckId={setSelectedDeckId}
+                            setActiveTab={setActiveTab}
+                        />
+
+                        {/* Dynamic View Tab Rendering */}
+                        <div class="mt-6">
+                            {activeTab === 'locker' && (
+                                <LockerRoomView 
+                                    decks={decks} 
+                                    setSelectedDeckId={setSelectedDeckId}
+                                    setActiveTab={setActiveTab}
+                                    streak={streak}
+                                    rings={rings}
+                                    triggerSound={triggerSound}
+                                />
+                            )}
+
+                            {activeTab === 'import' && (
+                                <ImportStudioView 
+                                    setDecks={setDecks} 
+                                    setSelectedDeckId={setSelectedDeckId}
+                                    setActiveTab={setActiveTab}
+                                    triggerSound={triggerSound}
+                                />
+                            )}
+
+                            {activeTab === 'flashcards' && (
+                                <FlashcardArenaView 
+                                    deck={currentDeck} 
+                                    triggerSound={triggerSound}
+                                />
+                            )}
+
+                            {activeTab === 'quiz' && (
+                                <QuizGameView 
+                                    deck={currentDeck} 
+                                    triggerSound={triggerSound}
+                                    setRings={setRings}
+                                />
+                            )}
+
+                            {activeTab === 'coach' && (
+                                <CoachBronAiView 
+                                    deck={currentDeck} 
+                                    triggerSound={triggerSound}
+                                />
+                            )}
+
+                            {activeTab === 'timer' && (
+                                <TimerClutchView 
+                                    triggerSound={triggerSound}
+                                />
+                            )}
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        function Sidebar({ activeTab, setActiveTab, streak, soundEnabled, setSoundEnabled }) {
+            const navItems = [
+                { id: 'locker', label: 'Locker Room', icon: 'trophy', badge: 'Home' },
+                { id: 'import', label: 'Draft Studio', icon: 'file-plus', badge: 'AI Import' },
+                { id: 'flashcards', label: 'Court Flashcards', icon: 'layers', badge: 'Practice' },
+                { id: 'quiz', label: 'Game Day Quiz', icon: 'target', badge: 'Test' },
+                { id: 'coach', label: 'Coach Bron AI', icon: 'bot', badge: '24/7' },
+                { id: 'timer', label: 'Clutch Timer', icon: 'clock', badge: '25m' },
+            ];
+
+            React.useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            });
+
+            return (
+                <aside class="w-full md:w-64 bg-lakers-cardBg border-r border-lakers-border p-4 flex flex-col justify-between shrink-0">
+                    <div>
+                        {/* Brand Logo */}
+                        <div class="flex items-center gap-3 px-2 py-3 mb-6 border-b border-lakers-border/60">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-lakers-purple to-lakers-gold flex items-center justify-center font-display text-2xl font-bold text-black crown-glow">
+                                👑
+                            </div>
+                            <div>
+                                <h1 class="font-display tracking-wider text-2xl font-bold text-white leading-none">LEBRON</h1>
+                                <p class="text-xs text-lakers-gold font-semibold uppercase tracking-widest">King's Study Hub</p>
+                            </div>
+                        </div>
+
+                        {/* Navigation Buttons */}
+                        <nav class="space-y-1">
+                            {navItems.map(item => {
+                                const isActive = activeTab === item.id;
+                                return (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            setActiveTab(item.id);
+                                            playSound('bounce');
+                                        }}
+                                        class={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl transition-all duration-200 font-medium text-sm ${
+                                            isActive 
+                                                ? 'bg-gradient-to-r from-lakers-purple to-lakers-purpleDark text-lakers-gold border border-lakers-gold/30 shadow-lg shadow-lakers-purple/30 font-semibold' 
+                                                : 'text-gray-400 hover:text-white hover:bg-lakers-purple/20'
+                                        }`}
+                                    >
+                                        <div class="flex items-center gap-3">
+                                            <i data-lucide={item.icon} class={`w-4 h-4 ${isActive ? 'text-lakers-gold' : 'text-gray-400'}`}></i>
+                                            <span>{item.label}</span>
+                                        </div>
+                                        <span class={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${
+                                            isActive ? 'bg-lakers-gold text-black' : 'bg-lakers-border text-gray-400'
+                                        }`}>
+                                            {item.badge}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </div>
+
+                    {/* Footer Stats & Audio Toggle */}
+                    <div class="mt-6 pt-4 border-t border-lakers-border space-y-3">
+                        <div class="bg-lakers-darkBg p-3 rounded-xl border border-lakers-border/80 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl">🔥</span>
+                                <div>
+                                    <p class="text-xs text-gray-400">Study Streak</p>
+                                    <p class="text-sm font-bold text-lakers-gold">{streak} Days Strong</p>
+                                </div>
+                            </div>
+                            <span class="text-xs bg-lakers-purple/50 text-lakers-gold px-2 py-1 rounded font-bold">MVP</span>
+                        </div>
+
+                        <button 
+                            onClick={() => setSoundEnabled(!soundEnabled)}
+                            class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-400 hover:text-white bg-lakers-cardBg hover:bg-lakers-border/50 rounded-lg border border-lakers-border transition"
+                        >
+                            <span class="flex items-center gap-2">
+                                <i data-lucide={soundEnabled ? "volume-2" : "volume-x"} class="w-4 h-4"></i>
+                                Arena Sounds
+                            </span>
+                            <span class={`font-bold ${soundEnabled ? 'text-green-400' : 'text-red-400'}`}>
+                                {soundEnabled ? 'ON' : 'MUTED'}
+                            </span>
+                        </button>
+                    </div>
+                </aside>
+            );
+        }
+
+        function HeaderBar({ currentDeck, decks, setSelectedDeckId, setActiveTab }) {
+            return (
+                <div class="bg-lakers-cardBg border border-lakers-border rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-lakers-purple/40 border border-lakers-gold/40 flex items-center justify-center text-2xl">
+                            ⚡
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-lakers-gold/20 text-lakers-gold border border-lakers-gold/30 uppercase">
+                                    {currentDeck?.category || 'General'}
+                                </span>
+                                <span class="text-xs text-gray-400">{currentDeck?.cards?.length || 0} Cards • {currentDeck?.quiz?.length || 0} Practice Questions</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-white mt-1">{currentDeck?.title || 'Select a Playbook'}</h2>
+                        </div>
+                    </div>
+
+                    {/* Quick Deck Switcher */}
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <select 
+                            value={currentDeck?.id} 
+                            onChange={(e) => setSelectedDeckId(e.target.value)}
+                            class="bg-lakers-darkBg text-white border border-lakers-border rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-lakers-gold w-full md:w-64"
+                        >
+                            {decks.map(d => (
+                                <option key={d.id} value={d.id}>📖 {d.title}</option>
+                            ))}
+                        </select>
+                        <button 
+                            onClick={() => setActiveTab('import')}
+                            class="bg-gradient-to-r from-lakers-gold to-lakers-goldHover text-black font-bold text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 hover:brightness-110 transition shrink-0"
+                        >
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            New Deck
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function LockerRoomView({ decks, setSelectedDeckId, setActiveTab, streak, rings, triggerSound }) {
+            return (
+                <div class="space-y-6">
+                    {/* LeBron Banner Quote */}
+                    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-lakers-purpleDark via-lakers-purple to-black border border-lakers-gold/30 p-6 md:p-8">
+                        <div class="relative z-10 max-w-2xl">
+                            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lakers-gold/20 text-lakers-gold text-xs font-bold border border-lakers-gold/30 mb-3">
+                                👑 DAILY LEBRON WISDOM
+                            </span>
+                            <h3 class="font-display text-3xl md:text-5xl font-bold text-white leading-tight uppercase">
+                                "I like criticism. It makes you strong."
+                            </h3>
+                            <p class="text-gray-300 text-sm md:text-base mt-2">
+                                Lock in today. Repetition on flashcards is like putting up 500 jump shots in an empty gym before dawn. Strive for greatness!
+                            </p>
+                            <div class="mt-5 flex flex-wrap items-center gap-3">
+                                <button 
+                                    onClick={() => { setActiveTab('flashcards'); triggerSound('bounce'); }}
+                                    class="bg-lakers-gold hover:bg-lakers-goldHover text-black font-bold px-5 py-2.5 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-lakers-gold/20"
+                                >
+                                    <i data-lucide="play" class="w-4 h-4 fill-black"></i> Hit The Cards
+                                </button>
+                                <button 
+                                    onClick={() => { setActiveTab('quiz'); triggerSound('bounce'); }}
+                                    class="bg-lakers-cardBg border border-lakers-gold/50 text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-lakers-purple/50 transition flex items-center gap-2"
+                                >
+                                    <i data-lucide="target" class="w-4 h-4 text-lakers-gold"></i> Start Quiz Game
+                                </button>
+                            </div>
+                        </div>
+                        <div class="absolute -right-8 -bottom-12 text-[180px] opacity-10 select-none font-display font-bold text-lakers-gold pointer-events-none">
+                            23
+                        </div>
+                    </div>
+
+                    {/* Championship Trophy Case / Stats */}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-lakers-cardBg border border-lakers-border rounded-2xl p-5 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl text-amber-400">
+                                🏆
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-medium">Championship Rings</p>
+                                <h4 class="text-xl font-bold text-white">{rings.length} Earned</h4>
+                            </div>
+                        </div>
+
+                        <div class="bg-lakers-cardBg border border-lakers-border rounded-2xl p-5 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl text-purple-400">
+                                📚
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-medium">Study Playbooks</p>
+                                <h4 class="text-xl font-bold text-white">{decks.length} Active Decks</h4>
+                            </div>
+                        </div>
+
+                        <div class="bg-lakers-cardBg border border-lakers-border rounded-2xl p-5 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center justify-center text-2xl text-green-400">
+                                🎯
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-medium">Total Flashcards</p>
+                                <h4 class="text-xl font-bold text-white">
+                                    {decks.reduce((acc, d) => acc + (d.cards?.length || 0), 0)} Cards
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Playbook Decks List */}
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="book-open" class="w-5 h-5 text-lakers-gold"></i>
+                                Your Study Decks (Playbooks)
+                            </h3>
+                            <button 
+                                onClick={() => setActiveTab('import')}
+                                class="text-xs font-bold text-lakers-gold hover:underline flex items-center gap-1"
+                            >
+                                + Import Notes
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {decks.map(deck => (
+                                <div 
+                                    key={deck.id}
+                                    class="bg-lakers-cardBg hover:border-lakers-gold/60 border border-lakers-border rounded-2xl p-5 transition duration-200 flex flex-col justify-between group"
+                                >
+                                    <div>
+                                        <div class="flex items-center justify-between gap-2 mb-2">
+                                            <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-lakers-purple/50 text-lakers-gold border border-lakers-purple">
+                                                {deck.category}
+                                            </span>
+                                            <span class="text-xs text-gray-400 font-medium">
+                                                {deck.cards.length} Cards
+                                            </span>
+                                        </div>
+                                        <h4 class="text-lg font-bold text-white group-hover:text-lakers-gold transition">
+                                            {deck.title}
+                                        </h4>
+                                        <p class="text-xs text-gray-400 mt-1 line-clamp-2">
+                                            {deck.description}
+                                        </p>
+                                    </div>
+
+                                    <div class="mt-5 pt-4 border-t border-lakers-border/60 flex items-center justify-between gap-2">
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedDeckId(deck.id);
+                                                setActiveTab('flashcards');
+                                                triggerSound('bounce');
+                                            }}
+                                            class="flex-1 bg-lakers-darkBg hover:bg-lakers-purple text-xs font-bold text-white py-2 px-3 rounded-lg border border-lakers-border flex items-center justify-center gap-1.5 transition"
+                                        >
+                                            <i data-lucide="layers" class="w-3.5 h-3.5 text-lakers-gold"></i>
+                                            Flashcards
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedDeckId(deck.id);
+                                                setActiveTab('quiz');
+                                                triggerSound('bounce');
+                                            }}
+                                            class="flex-1 bg-lakers-gold/10 hover:bg-lakers-gold/20 text-xs font-bold text-lakers-gold py-2 px-3 rounded-lg border border-lakers-gold/30 flex items-center justify-center gap-1.5 transition"
+                                        >
+                                            <i data-lucide="target" class="w-3.5 h-3.5"></i>
+                                            Take Quiz
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function ImportStudioView({ setDecks, setSelectedDeckId, setActiveTab, triggerSound }) {
+            const [importMode, setImportMode] = React.useState('ai'); // 'ai' or 'manual'
+            const [inputText, setInputText] = React.useState('');
+            const [subjectCategory, setSubjectCategory] = React.useState('General Study');
+            const [deckTitle, setDeckTitle] = React.useState('');
+            const [isGenerating, setIsGenerating] = React.useState(false);
+            const [statusMessage, setStatusMessage] = React.useState('');
+
+            // AI Generation using Gemini API
+            const handleAiGeneration = async () => {
+                if (!inputText.trim()) {
+                    setStatusMessage('Please paste or type study notes first!');
+                    return;
+                }
+
+                setIsGenerating(true);
+                setStatusMessage('Coach Bron is analyzing your notes and drafting cards...');
+
+                try {
+                    const apiKey = ""; // Canvas runtime injection
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                    const systemInstruction = `You are LeBron James ("Coach Bron"), an elite academic mentor. Create a study deck containing 4 high-quality flashcards and 3 multiple-choice practice quiz questions based on the provided material. Respond strictly in valid JSON without markdown wrapping.`;
+
+                    const promptText = `
+                    Subject/Category: ${subjectCategory}
+                    Title Suggestion: ${deckTitle || 'Custom Imported Deck'}
+                    Study Notes:
+                    ${inputText}
+
+                    Return JSON matching this format:
+                    {
+                        "title": "Clear Deck Title",
+                        "category": "${subjectCategory}",
+                        "description": "Short summary of topic",
+                        "cards": [
+                            {
+                                "id": "c1",
+                                "question": "Key concept question?",
+                                "answer": "Direct answer",
+                                "explanation": "Detailed academic explanation",
+                                "lebronTip": "A fun basketball/motivational analogy by LeBron James"
+                            }
+                        ],
+                        "quiz": [
+                            {
+                                "id": "q1",
+                                "question": "Question?",
+                                "options": ["Option A", "Option B", "Option C", "Option D"],
+                                "correctIndex": 0,
+                                "explanation": "Why this option is correct"
+                            }
+                        ]
+                    }
+                    `;
+
+                    const payload = {
+                        contents: [{ parts: [{ text: promptText }] }],
+                        systemInstruction: { parts: [{ text: systemInstruction }] },
+                        generationConfig: {
+                            responseMimeType: "application/json"
+                        }
+                    };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+                    const jsonText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    if (jsonText) {
+                        const parsedDeck = JSON.parse(jsonText);
+                        const newDeck = {
+                            ...parsedDeck,
+                            id: 'deck-' + Date.now()
+                        };
+
+                        setDecks(prev => [newDeck, ...prev]);
+                        setSelectedDeckId(newDeck.id);
+                        triggerSound('swish');
+                        setActiveTab('flashcards');
+                    } else {
+                        throw new Error('Failed to parse Gemini output');
+                    }
+
+                } catch (err) {
+                    console.error('AI Draft Error:', err);
+                    setStatusMessage('Drafting fallback active: Generating structured deck locally...');
+                    
+                    // Fallback Deck Creator if offline or API limit
+                    const fallbackDeck = {
+                        id: 'deck-' + Date.now(),
+                        title: deckTitle || 'Imported Notes Playbook',
+                        category: subjectCategory,
+                        description: 'Generated from imported text content.',
+                        cards: [
+                            {
+                                id: 'fc1',
+                                question: 'What is the main takeaway from your notes?',
+                                answer: inputText.slice(0, 100) + '...',
+                                explanation: 'Summary generated from provided material.',
+                                lebronTip: 'Execution is key! Review this concept twice a day.'
+                            },
+                            {
+                                id: 'fc2',
+                                question: 'Define the core objective in this section.',
+                                answer: 'Mastering the imported material.',
+                                explanation: 'Detailed review recommended.',
+                                lebronTip: 'Lock in on details like a clutch fourth quarter defense!'
+                            }
+                        ],
+                        quiz: [
+                            {
+                                id: 'q1',
+                                question: 'What subject is covered in this playbook?',
+                                options: [subjectCategory, 'General Trivia', 'Uncategorized', 'Other'],
+                                correctIndex: 0,
+                                explanation: 'Matched your designated category.'
+                            }
+                        ]
+                    };
+
+                    setDecks(prev => [fallbackDeck, ...prev]);
+                    setSelectedDeckId(fallbackDeck.id);
+                    triggerSound('swish');
+                    setActiveTab('flashcards');
+
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            return (
+                <div class="max-w-3xl mx-auto bg-lakers-cardBg border border-lakers-border rounded-2xl p-6 md:p-8 space-y-6">
+                    <div class="flex items-center justify-between border-b border-lakers-border pb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-lakers-gold/20 text-lakers-gold flex items-center justify-center font-bold">
+                                ✨
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white">Draft Studio</h3>
+                                <p class="text-xs text-gray-400">Import your notes, articles, or topics to build flashcards & quizzes</p>
+                            </div>
+                        </div>
+
+                        <div class="flex bg-lakers-darkBg rounded-xl p-1 border border-lakers-border">
+                            <button 
+                                onClick={() => setImportMode('ai')}
+                                class={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${importMode === 'ai' ? 'bg-lakers-purple text-lakers-gold' : 'text-gray-400'}`}
+                            >
+                                Coach AI Draft
+                            </button>
+                            <button 
+                                onClick={() => setImportMode('manual')}
+                                class={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${importMode === 'manual' ? 'bg-lakers-purple text-lakers-gold' : 'text-gray-400'}`}
+                            >
+                                Quick Paste
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Playbook Title</label>
+                            <input 
+                                type="text"
+                                value={deckTitle}
+                                onChange={(e) => setDeckTitle(e.target.value)}
+                                placeholder="e.g. History Chapter 4, Organic Chem 1"
+                                class="w-full bg-lakers-darkBg border border-lakers-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-lakers-gold"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Category / Subject</label>
+                            <input 
+                                type="text"
+                                value={subjectCategory}
+                                onChange={(e) => setSubjectCategory(e.target.value)}
+                                placeholder="e.g. Science, Literature, Math"
+                                class="w-full bg-lakers-darkBg border border-lakers-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-lakers-gold"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">
+                            Paste Study Notes, Terms, or Raw Text
+                        </label>
+                        <textarea
+                            rows="8"
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                            placeholder="Paste your lecture notes, textbook excerpts, or list of terms here... Coach Bron will convert it into interactive flashcards and practice quiz questions automatically."
+                            class="w-full bg-lakers-darkBg border border-lakers-border rounded-xl p-4 text-sm text-white focus:outline-none focus:border-lakers-gold resize-none"
+                        ></textarea>
+                    </div>
+
+                    {statusMessage && (
+                        <div class="p-3 bg-lakers-purple/30 border border-lakers-purple text-lakers-gold text-xs rounded-xl flex items-center gap-2">
+                            <i data-lucide="info" class="w-4 h-4"></i>
+                            {statusMessage}
+                        </div>
+                    )}
+
+                    <div class="pt-2 flex items-center justify-end gap-3">
+                        <button 
+                            onClick={handleAiGeneration}
+                            disabled={isGenerating}
+                            class="w-full md:w-auto bg-gradient-to-r from-lakers-gold to-lakers-goldHover text-black font-bold text-sm px-6 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition disabled:opacity-50"
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <div class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                    <span>Drafting Playbook...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>👑 Generate Playbook with AI</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function FlashcardArenaView({ deck, triggerSound }) {
+            const [currentIndex, setCurrentIndex] = React.useState(0);
+            const [isFlipped, setIsFlipped] = React.useState(false);
+            const [masteredCards, setMasteredCards] = React.useState({});
+            const [speaking, setSpeaking] = React.useState(false);
+
+            if (!deck || !deck.cards || deck.cards.length === 0) {
+                return (
+                    <div class="text-center py-16 bg-lakers-cardBg rounded-2xl border border-lakers-border">
+                        <p class="text-gray-400">No cards in this deck yet! Head to Draft Studio to generate cards.</p>
+                    </div>
+                );
+            }
+
+            const card = deck.cards[currentIndex];
+
+            const handleNext = () => {
+                setIsFlipped(false);
+                setCurrentIndex((prev) => (prev + 1) % deck.cards.length);
+                triggerSound('bounce');
+            };
+
+            const handlePrev = () => {
+                setIsFlipped(false);
+                setCurrentIndex((prev) => (prev - 1 + deck.cards.length) % deck.cards.length);
+                triggerSound('bounce');
+            };
+
+            const toggleMastery = (cardId) => {
+                setMasteredCards(prev => {
+                    const updated = { ...prev, [cardId]: !prev[cardId] };
+                    if (updated[cardId]) triggerSound('swish');
+                    return updated;
+                });
+            };
+
+            // Text to speech for card read-aloud
+            const speakText = (text) => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.95;
+                    utterance.onend = () => setSpeaking(false);
+                    setSpeaking(true);
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            return (
+                <div class="max-w-2xl mx-auto space-y-6">
+                    {/* Top Progress & Controls */}
+                    <div class="flex items-center justify-between text-sm text-gray-400">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-white">Card {currentIndex + 1}</span> of <span>{deck.cards.length}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button 
+                                onClick={() => speakText(`${card.question}. Answer: ${card.answer}`)}
+                                class={`p-2 rounded-lg border transition ${speaking ? 'bg-lakers-gold text-black border-lakers-gold' : 'bg-lakers-cardBg border-lakers-border text-gray-300 hover:text-white'}`}
+                                title="Read Card Aloud"
+                            >
+                                <i data-lucide="volume-2" class="w-4 h-4"></i>
+                            </button>
+                            <button 
+                                onClick={() => toggleMastery(card.id)}
+                                class={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition ${
+                                    masteredCards[card.id] 
+                                        ? 'bg-green-500/20 text-green-400 border-green-500/40' 
+                                        : 'bg-lakers-cardBg text-gray-400 border-lakers-border hover:text-white'
+                                }`}
+                            >
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                                {masteredCards[card.id] ? 'Swish! Mastered' : 'Mark Mastered'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 3D Flip Flashcard */}
+                    <div 
+                        onClick={() => { setIsFlipped(!isFlipped); triggerSound('bounce'); }}
+                        class="cursor-pointer perspective-1000 w-full min-h-[340px] relative"
+                    >
+                        <div class={`w-full h-full min-h-[340px] rounded-3xl transition-transform duration-500 transform-style-3d bg-lakers-cardBg border-2 ${isFlipped ? 'rotate-y-180 border-lakers-gold/60' : 'border-lakers-purple/80'} shadow-2xl p-6 md:p-8 flex flex-col justify-between`}>
+                            
+                            {/* Front Side (Question) */}
+                            <div class={`w-full h-full flex flex-col justify-between ${isFlipped ? 'hidden' : 'block'}`}>
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold uppercase tracking-wider text-lakers-gold bg-lakers-gold/10 px-3 py-1 rounded-full border border-lakers-gold/20">
+                                            Question / Concept
+                                        </span>
+                                        <span class="text-xs text-gray-500">Click to Flip 🔄</span>
+                                    </div>
+                                    <h3 class="text-2xl md:text-3xl font-bold text-white mt-8 leading-snug">
+                                        {card.question}
+                                    </h3>
+                                </div>
+                                <div class="text-xs text-gray-400 text-center pt-6 border-t border-lakers-border/50">
+                                    💡 Tap card to reveal answer & Coach Bron's breakdown
+                                </div>
+                            </div>
+
+                            {/* Back Side (Answer & LeBron Tip) */}
+                            <div class={`w-full h-full flex flex-col justify-between rotate-y-180 ${isFlipped ? 'block' : 'hidden'}`}>
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold uppercase tracking-wider text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
+                                            Answer
+                                        </span>
+                                        <span class="text-xs text-gray-500">Click to Flip 🔄</span>
+                                    </div>
+
+                                    <h4 class="text-2xl font-bold text-lakers-gold mt-4">
+                                        {card.answer}
+                                    </h4>
+
+                                    <p class="text-sm text-gray-300 mt-3 leading-relaxed">
+                                        {card.explanation}
+                                    </p>
+
+                                    {card.lebronTip && (
+                                        <div class="mt-5 p-3.5 bg-lakers-purple/30 border border-lakers-purple/60 rounded-xl flex items-start gap-3">
+                                            <span class="text-xl">👑</span>
+                                            <div>
+                                                <p class="text-[11px] font-bold text-lakers-gold uppercase tracking-wider">Coach Bron's Playbook Tip</p>
+                                                <p class="text-xs text-gray-200 mt-0.5">{card.lebronTip}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div class="text-xs text-gray-400 text-center pt-4 border-t border-lakers-border/50">
+                                    Press Next to move to the next repetition
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {/* Flashcard Navigation Bar */}
+                    <div class="flex items-center justify-between gap-4">
+                        <button 
+                            onClick={handlePrev}
+                            class="bg-lakers-cardBg border border-lakers-border hover:border-lakers-gold text-white font-bold px-5 py-3 rounded-xl text-sm transition flex items-center gap-2"
+                        >
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i> Previous
+                        </button>
+
+                        <div class="flex items-center gap-1.5">
+                            {deck.cards.map((c, idx) => (
+                                <div 
+                                    key={c.id} 
+                                    class={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentIndex ? 'w-6 bg-lakers-gold' : masteredCards[c.id] ? 'bg-green-500' : 'bg-lakers-border'}`}
+                                ></div>
+                            ))}
+                        </div>
+
+                        <button 
+                            onClick={handleNext}
+                            class="bg-lakers-gold hover:bg-lakers-goldHover text-black font-bold px-6 py-3 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-lakers-gold/20"
+                        >
+                            Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function QuizGameView({ deck, triggerSound, setRings }) {
+            const [currentQIndex, setCurrentQIndex] = React.useState(0);
+            const [selectedOption, setSelectedOption] = React.useState(null);
+            const [score, setScore] = React.useState(0);
+            const [quizFinished, setQuizFinished] = React.useState(false);
+            const [answersSummary, setAnswersSummary] = React.useState([]);
+
+            if (!deck || !deck.quiz || deck.quiz.length === 0) {
+                return (
+                    <div class="text-center py-16 bg-lakers-cardBg rounded-2xl border border-lakers-border">
+                        <p class="text-gray-400">No practice quiz questions in this deck yet. Use Draft Studio to create some!</p>
+                    </div>
+                );
+            }
+
+            const currentQ = deck.quiz[currentQIndex];
+
+            const handleOptionSelect = (optionIndex) => {
+                if (selectedOption !== null) return; // Prevent double taps
+
+                setSelectedOption(optionIndex);
+                const isCorrect = optionIndex === currentQ.correctIndex;
+
+                if (isCorrect) {
+                    setScore(prev => prev + 1);
+                    triggerSound('correct');
+                } else {
+                    triggerSound('buzzer');
+                }
+
+                setAnswersSummary(prev => [
+                    ...prev,
+                    { question: currentQ.question, selected: optionIndex, correct: currentQ.correctIndex, isCorrect }
+                ]);
+            };
+
+            const handleNextQuestion = () => {
+                if (currentQIndex + 1 < deck.quiz.length) {
+                    setCurrentQIndex(prev => prev + 1);
+                    setSelectedOption(null);
+                } else {
+                    setQuizFinished(true);
+                    triggerSound('swish');
+                    // Check if high score awards championship ring
+                    if ((score / deck.quiz.length) >= 0.8) {
+                        if (window.confetti) window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                        setRings(prev => Array.from(new Set([...prev, `${deck.title} Champion Ring`])));
+                    }
+                }
+            };
+
+            const resetQuiz = () => {
+                setCurrentQIndex(0);
+                setSelectedOption(null);
+                setScore(0);
+                setQuizFinished(false);
+                setAnswersSummary([]);
+            };
+
+            return (
+                <div class="max-w-2xl mx-auto space-y-6">
+                    {/* Arena Scoreboard Header */}
+                    <div class="bg-lakers-darkBg border border-lakers-border rounded-2xl p-4 flex items-center justify-between text-center">
+                        <div class="text-left">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">GAME DAY PRACTICE</span>
+                            <h4 class="text-sm font-bold text-white">{deck.title}</h4>
+                        </div>
+                        <div class="flex items-center gap-6">
+                            <div>
+                                <span class="text-[10px] text-gray-400 font-bold block">SCORE</span>
+                                <span class="font-display text-2xl font-bold text-lakers-gold">{score} / {deck.quiz.length}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-400 font-bold block">SHOTS</span>
+                                <span class="font-display text-2xl font-bold text-white">{currentQIndex + 1}/{deck.quiz.length}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {!quizFinished ? (
+                        <div class="bg-lakers-cardBg border border-lakers-border rounded-2xl p-6 md:p-8 space-y-6 shadow-xl">
+                            <div>
+                                <span class="text-xs font-bold text-lakers-gold uppercase tracking-wider">Question {currentQIndex + 1}</span>
+                                <h3 class="text-xl md:text-2xl font-bold text-white mt-2">
+                                    {currentQ.question}
+                                </h3>
+                            </div>
+
+                            {/* Options */}
+                            <div class="space-y-3">
+                                {currentQ.options.map((opt, idx) => {
+                                    let btnStyle = "bg-lakers-darkBg border-lakers-border text-gray-200 hover:border-lakers-gold/50";
+                                    
+                                    if (selectedOption !== null) {
+                                        if (idx === currentQ.correctIndex) {
+                                            btnStyle = "bg-green-500/20 border-green-500 text-green-300 font-bold";
+                                        } else if (idx === selectedOption) {
+                                            btnStyle = "bg-red-500/20 border-red-500 text-red-300";
+                                        } else {
+                                            btnStyle = "bg-lakers-darkBg border-lakers-border text-gray-500 opacity-50";
+                                        }
+                                    }
+
+                                    return (
+                                        <button
+                                            key={idx}
+                                            onClick={() => handleOptionSelect(idx)}
+                                            disabled={selectedOption !== null}
+                                            class={`w-full text-left p-4 rounded-xl border text-sm font-medium transition duration-200 flex items-center justify-between ${btnStyle}`}
+                                        >
+                                            <span>{opt}</span>
+                                            {selectedOption !== null && idx === currentQ.correctIndex && (
+                                                <span class="text-green-400 font-bold text-xs">SWISH ✓</span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Explanation Feedback */}
+                            {selectedOption !== null && (
+                                <div class="p-4 bg-lakers-purple/30 border border-lakers-purple rounded-xl text-xs space-y-1">
+                                    <p class="font-bold text-lakers-gold uppercase">Coach Playbook Breakdown:</p>
+                                    <p class="text-gray-300">{currentQ.explanation}</p>
+                                </div>
+                            )}
+
+                            {/* Continue Button */}
+                            {selectedOption !== null && (
+                                <div class="pt-2 flex justify-end">
+                                    <button
+                                        onClick={handleNextQuestion}
+                                        class="bg-lakers-gold hover:bg-lakers-goldHover text-black font-bold px-6 py-3 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-lakers-gold/20"
+                                    >
+                                        {currentQIndex + 1 < deck.quiz.length ? 'Next Question ➡️' : 'View Game Box Score 🏆'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        /* Quiz Finished Box Score */
+                        <div class="bg-lakers-cardBg border border-lakers-border rounded-2xl p-6 md:p-8 text-center space-y-6">
+                            <div class="w-16 h-16 mx-auto rounded-full bg-lakers-gold/20 border border-lakers-gold/40 flex items-center justify-center text-3xl">
+                                {(score / deck.quiz.length) >= 0.8 ? '🏆' : '🏀'}
+                            </div>
+
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">Final Box Score</h3>
+                                <p class="text-sm text-gray-400 mt-1">
+                                    Field Goal Percentage: <span class="font-bold text-lakers-gold">{Math.round((score / deck.quiz.length) * 100)}%</span>
+                                </p>
+                            </div>
+
+                            <div class="p-4 bg-lakers-darkBg rounded-xl border border-lakers-border text-left space-y-2">
+                                <p class="text-xs font-bold text-gray-400 uppercase">Coach Bron's Post-Game Review:</p>
+                                <p class="text-sm text-gray-300">
+                                    {(score / deck.quiz.length) >= 0.8 
+                                        ? "Championship performance! You dominated the floor on this subject. Keep pushing for back-to-back titles!" 
+                                        : "Good effort out there! Go back to the flashcards for another practice session before game day."}
+                                </p>
+                            </div>
+
+                            <div class="flex items-center justify-center gap-4">
+                                <button
+                                    onClick={resetQuiz}
+                                    class="bg-lakers-gold text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-lakers-goldHover transition"
+                                >
+                                    Replay Quiz
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function CoachBronAiView({ deck, triggerSound }) {
+            const [messages, setMessages] = React.useState([
+                {
+                    role: 'assistant',
+                    text: `What's good, Champ! I'm Coach Bron. I'm locked in and ready to break down any topic from "${deck.title}" or whatever concept you're tackling today. Ask me for a basketball analogy, a game plan summary, or a quick pop quiz!`
+                }
+            ]);
+            const [inputText, setInputText] = React.useState('');
+            const [isLoading, setIsLoading] = React.useState(false);
+            const chatEndRef = React.useRef(null);
+
+            React.useEffect(() => {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages]);
+
+            const sendMessage = async (customPrompt) => {
+                const query = customPrompt || inputText;
+                if (!query.trim()) return;
+
+                const userMsg = { role: 'user', text: query };
+                setMessages(prev => [...prev, userMsg]);
+                if (!customPrompt) setInputText('');
+                setIsLoading(true);
+
+                try {
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                    const systemInstruction = `You are 'Coach Bron' (LeBron James as an enthusiastic, hyper-encouraging, brilliant academic mentor). 
+                    Speak like LeBron James: use basketball analogies, call the student 'Champ', 'Teammate', or 'Young King/Queen', and break down complex concepts into simple step-by-step 'game plans'. 
+                    Maintain high energy, leadership, and absolute academic clarity. Context deck title: ${deck.title}.`;
+
+                    const chatHistory = messages.map(m => ({
+                        role: m.role === 'assistant' ? 'model' : 'user',
+                        parts: [{ text: m.text }]
+                    }));
+                    chatHistory.push({ role: 'user', parts: [{ text: query }] });
+
+                    const payload = {
+                        contents: chatHistory,
+                        systemInstruction: { parts: [{ text: systemInstruction }] }
+                    };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+                    const replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Listen man, we had a temporary timeout on the server! Let's run that play again.";
+
+                    setMessages(prev => [...prev, { role: 'assistant', text: replyText }]);
+                    triggerSound('bounce');
+
+                } catch (err) {
+                    console.error('Coach Bron Chat Error:', err);
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        text: "Great effort on that play! Remember: Consistency is everything. Focus on mastering the key terms step by step."
+                    }]);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            return (
+                <div class="max-w-3xl mx-auto h-[600px] bg-lakers-cardBg border border-lakers-border rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+                    {/* Header */}
+                    <div class="bg-lakers-darkBg border-b border-lakers-border p-4 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-lakers-purple to-lakers-gold flex items-center justify-center font-bold text-lg crown-glow">
+                            👑
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                Coach Bron AI <span class="w-2 h-2 rounded-full bg-green-400 inline-block animate-ping"></span>
+                            </h3>
+                            <p class="text-xs text-lakers-gold">24/7 AI Study Mentor & Game Strategist</p>
+                        </div>
+                    </div>
+
+                    {/* Messages Body */}
+                    <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                        {messages.map((m, idx) => (
+                            <div key={idx} class={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div class={`max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed ${
+                                    m.role === 'user' 
+                                        ? 'bg-lakers-purple text-white rounded-br-none border border-lakers-purple' 
+                                        : 'bg-lakers-darkBg text-gray-200 border border-lakers-border rounded-bl-none'
+                                }`}>
+                                    {m.role === 'assistant' && (
+                                        <p class="text-[10px] font-bold text-lakers-gold mb-1 uppercase tracking-wider">Coach Bron 🏀</p>
+                                    )}
+                                    <p class="whitespace-pre-wrap">{m.text}</p>
+                                </div>
+                            </div>
+                        ))}
+                        {isLoading && (
+                            <div class="flex justify-start">
+                                <div class="bg-lakers-darkBg border border-lakers-border rounded-2xl p-3 text-xs text-lakers-gold flex items-center gap-2">
+                                    <div class="w-2 h-2 bg-lakers-gold rounded-full animate-bounce"></div>
+                                    <span>Coach Bron is drawing up the playbook...</span>
+                                </div>
+                            </div>
+                        )}
+                        <div ref={chatEndRef}></div>
+                    </div>
+
+                    {/* Quick Action Prompt Pills */}
+                    <div class="p-2 bg-lakers-darkBg/60 border-t border-lakers-border/50 flex items-center gap-2 overflow-x-auto text-xs">
+                        <button 
+                            onClick={() => sendMessage("Give me a basketball analogy for this deck topic!")}
+                            class="bg-lakers-cardBg border border-lakers-border text-gray-300 hover:text-white px-3 py-1.5 rounded-full shrink-0"
+                        >
+                            🏀 Basketball Analogy
+                        </button>
+                        <button 
+                            onClick={() => sendMessage("Give me a pre-game motivational pep talk!")}
+                            class="bg-lakers-cardBg border border-lakers-border text-gray-300 hover:text-white px-3 py-1.5 rounded-full shrink-0"
+                        >
+                            🔥 Pre-game Pep Talk
+                        </button>
+                        <button 
+                            onClick={() => sendMessage("Test me on a hard question from this subject right now.")}
+                            class="bg-lakers-cardBg border border-lakers-border text-gray-300 hover:text-white px-3 py-1.5 rounded-full shrink-0"
+                        >
+                            🎯 Pop Quiz Me
+                        </button>
+                    </div>
+
+                    {/* Input Field */}
+                    <div class="p-3 bg-lakers-darkBg border-t border-lakers-border flex items-center gap-2">
+                        <input 
+                            type="text"
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                            placeholder="Ask Coach Bron anything about your study notes..."
+                            class="flex-1 bg-lakers-cardBg border border-lakers-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-lakers-gold"
+                        />
+                        <button 
+                            onClick={() => sendMessage()}
+                            disabled={isLoading}
+                            class="bg-lakers-gold hover:bg-lakers-goldHover text-black p-2.5 rounded-xl font-bold transition disabled:opacity-50"
+                        >
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function TimerClutchView({ triggerSound }) {
+            const [timeLeft, setTimeLeft] = React.useState(25 * 60);
+            const [isRunning, setIsRunning] = React.useState(false);
+            const [mode, setMode] = React.useState('focus'); // 'focus' (25m) or 'break' (5m)
+
+            React.useEffect(() => {
+                let timer;
+                if (isRunning && timeLeft > 0) {
+                    timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+                } else if (timeLeft === 0) {
+                    triggerSound('buzzer');
+                    setIsRunning(false);
+                }
+                return () => clearInterval(timer);
+            }, [isRunning, timeLeft]);
+
+            const toggleTimer = () => {
+                setIsRunning(!isRunning);
+                triggerSound('bounce');
+            };
+
+            const resetTimer = (newMinutes, newMode) => {
+                setIsRunning(false);
+                setMode(newMode);
+                setTimeLeft(newMinutes * 60);
+                triggerSound('bounce');
+            };
+
+            const formatTime = (seconds) => {
+                const m = Math.floor(seconds / 60);
+                const s = seconds % 60;
+                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            };
+
+            const totalDuration = mode === 'focus' ? 25 * 60 : 5 * 60;
+            const progress = ((totalDuration - timeLeft) / totalDuration) * 100;
+
+            return (
+                <div class="max-w-xl mx-auto bg-lakers-cardBg border border-lakers-border rounded-2xl p-8 text-center space-y-6 shadow-2xl">
+                    <div class="flex justify-center gap-2 bg-lakers-darkBg p-1 rounded-xl w-fit mx-auto border border-lakers-border">
+                        <button 
+                            onClick={() => resetTimer(25, 'focus')}
+                            class={`px-4 py-2 rounded-lg text-xs font-bold transition ${mode === 'focus' ? 'bg-lakers-purple text-lakers-gold' : 'text-gray-400'}`}
+                        >
+                            25M Clutch Focus
+                        </button>
+                        <button 
+                            onClick={() => resetTimer(5, 'break')}
+                            class={`px-4 py-2 rounded-lg text-xs font-bold transition ${mode === 'break' ? 'bg-lakers-purple text-lakers-gold' : 'text-gray-400'}`}
+                        >
+                            5M Timeout Break
+                        </button>
+                    </div>
+
+                    {/* Timer Clock Circle */}
+                    <div class="relative w-64 h-64 mx-auto flex items-center justify-center">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="128" cy="128" r="110" stroke="currentColor" stroke-width="10" class="text-lakers-darkBg" fill="transparent" />
+                            <circle 
+                                cx="128" 
+                                cy="128" 
+                                r="110" 
+                                stroke="currentColor" 
+                                stroke-width="10" 
+                                stroke-dasharray={690}
+                                stroke-dashoffset={690 - (690 * progress) / 100}
+                                stroke-linecap="round"
+                                class="text-lakers-gold transition-all duration-1000" 
+                                fill="transparent" 
+                            />
+                        </svg>
+                        <div class="absolute flex flex-col items-center">
+                            <span class="font-display text-6xl font-bold text-white tracking-widest">{formatTime(timeLeft)}</span>
+                            <span class="text-xs uppercase font-bold text-lakers-gold mt-1">
+                                {mode === 'focus' ? '🏀 4th Quarter Lock In' : '🥤 Bench Timeout'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Control Buttons */}
+                    <div class="flex items-center justify-center gap-4">
+                        <button 
+                            onClick={toggleTimer}
+                            class="bg-lakers-gold hover:bg-lakers-goldHover text-black font-bold px-8 py-3.5 rounded-xl text-base transition shadow-lg shadow-lakers-gold/20"
+                        >
+                            {isRunning ? 'Pause Clock ⏱️' : 'Start Clutch Time 🚀'}
+                        </button>
+                        <button 
+                            onClick={() => resetTimer(mode === 'focus' ? 25 : 5, mode)}
+                            class="bg-lakers-darkBg border border-lakers-border text-gray-300 hover:text-white px-5 py-3.5 rounded-xl text-sm font-bold transition"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<LeBronApp />);
+    </script>
+</body>
+</html>
